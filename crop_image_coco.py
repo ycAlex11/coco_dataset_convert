@@ -1,42 +1,43 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#this is a simple code to separate a image(2048*2048) into 9 images in a group of images 
-#And re-write the josn file as coco dataset for all cropping images
-
 import json
 import cv2
 
-
 num_img = 0;
 
-#a simple function to create folder 
 def mkdir(path):
+    # 引入模块
     import os
-
+ 
+    # 去除首位空格
     path=path.strip()
-
+    # 去除尾部 \ 符号
     path=path.rstrip("\\")
  
-
+    # 判断路径是否存在
+    # 存在     True
+    # 不存在   False
     isExists=os.path.exists(path)
-
+ 
+    # 判断结果
     if not isExists:
+        # 如果不存在则创建目录
+        # 创建目录操作函数
         os.makedirs(path) 
  
         print path+'---creating folder'
         return True
     else:
+        # 如果目录存在则不创建，并提示目录已存在
         print path+'--the folder is existed'
         return False
 
-#reading the original coco dataset's json file
 def reading():
-    file2 = '/home/cat/ceshi/val1.json'
+    file2 = '/home/cat/ceshi/valsth.json'
     with open(file2) as f:
     	cates = json.load(f)
     return cates
 
-#move the bbox and segmentation to right position in cropping image
 def moving(l,chose,segmentation):
     l_new=[]
     seg = segmentation[0]
@@ -44,7 +45,7 @@ def moving(l,chose,segmentation):
     temp = []
     if chose == 1:
         l_new = l
-        seg_new.add(seg)
+        seg_new.append(seg)
     elif chose == 2:
         l_new.append(l[0]-624)
         l_new.append(l[1])
@@ -159,7 +160,6 @@ def moving(l,chose,segmentation):
         seg_new.append(temp)
     return l_new,seg_new
 
-#write a new annotations for the cropping image
 def get_anno(i,sth,anno_id,annos,l):
     anno_temp = {}
     bbox_result,seg_result = moving(sth['bbox'],i,sth['segmentation'])
@@ -178,22 +178,15 @@ dataset ={}
 anno_id =0
 new_imgs=[]
 anno_new = []
-write_path = '/mnt/cfs/data/CTW800/train/'
-
-#the data in original coco dataset's joson file
+write_path = '/mnt/cfs/data/CTW800/val/'
 data = reading()
 count =0
-
-#the key is original image name, the value is a list which contains its all cropping images' name
 checking = {}
-
 img_new = 0
+#path = '/mnt/cfs/data/CTW800/val/'
 
-#go through all annotations
 for sth in data['annotations']:
  #if count<10:
-    #this if part is separate image when the image appears first time ,because one image may have a few of annotations
-    #so for one image we only want crop it into 9 cropping image once  
     if checking.has_key(sth['image_id'])==False:
        
        img = cv2.imread('/mnt/cfs/data/CTW/images-trainval/'+sth['image_id']+'.jpg')
@@ -207,14 +200,12 @@ for sth in data['annotations']:
        img8 = img[1248:2048,624:1424]
        img9 = img[1248:2048,1248:2048]
        crop_images = []
-       #make folder for each image's cropping images
        path = write_path+str(sth['image_id'])+'/'
        mkdir(path)
        path2 = str(sth['image_id'])+'/'
        #cv2.rectangle(img,(int(sth['bbox'][0]),int(sth['bbox'][1])),(int(sth['bbox'][0])+int(sth['bbox'][2]),int(sth['bbox'][1])+int(sth['bbox'][3])),(55,255,155),5)
        #cv2.imwrite(path+str(sth['image_id'])+'.jpg',img)
 
-       #separate each image into 9 parts
        cv2.imwrite(path+str(img_new)+'.jpg',img1)
        img_temp = {}
        crop_images.append(img_new)
@@ -258,7 +249,7 @@ for sth in data['annotations']:
        img_temp['id'] = img_new
        new_imgs.append(img_temp)
        img_new = img_new + 1
-
+       
        cv2.imwrite(path+str(img_new)+'.jpg',img5)
        img_temp = {}
        crop_images.append(img_new)
@@ -315,8 +306,6 @@ for sth in data['annotations']:
        img_new = img_new + 1
 
        checking[sth['image_id']] = crop_images
-
-       #check each case to move the bbox and segmentation
        if sth['bbox'][0]<800 and sth['bbox'][1]<800:
             #anno_temp,anno_id = get_anno(1,sth,anno_id)
             anno_id=get_anno(1,sth,anno_id,anno_new,crop_images)
@@ -333,7 +322,7 @@ for sth in data['annotations']:
        if sth['bbox'][0]<1424 and sth['bbox'][1]<1424 and sth['bbox'][1]>=624 and sth['bbox'][0]>=624:
             anno_id=get_anno(5,sth,anno_id,anno_new,crop_images)   
         
-       if sth['bbox'][0]>1248 and sth['bbox'][1]<1424 and sth['bbox'][1]>=624:
+       if sth['bbox'][0]>=1248 and sth['bbox'][1]<1424 and sth['bbox'][1]>=624:
             anno_id=get_anno(6,sth,anno_id,anno_new,crop_images)
 
        if sth['bbox'][0]<800 and sth['bbox'][1]>=1248:
@@ -351,8 +340,6 @@ for sth in data['annotations']:
        #img = cv2.imread('/home/cat/result/'+str(sth['image_id'])+'/'+str(sth['image_id'])+'.jpg')
        #cv2.rectangle(img,(int(sth['bbox'][0]),int(sth['bbox'][1])),(int(sth['bbox'][0])+int(sth['bbox'][2]),int(sth['bbox'][1])+int(sth['bbox'][3])),(55,255,155),5)
        #cv2.imwrite('/home/cat/result/'+str(sth['image_id'])+'/'+str(sth['image_id'])+'.jpg',img)
-
-       #if the images has already separated , find the corresponding cropping image
        crop_images = checking[sth['image_id']]
        if sth['bbox'][0]<800 and sth['bbox'][1]<800:
             #anno_temp,anno_id = get_anno(1,sth,anno_id)
@@ -386,7 +373,6 @@ dataset['images'] = new_imgs
 dataset['annotations'] = anno_new
 dataset['categories'] =data['categories']
 
-#write the new json file
 file3 ='/mnt/cfs/data/CTW800/val_new.json' 
 
 with open(file3,"w") as f:

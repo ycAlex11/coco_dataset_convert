@@ -20,5 +20,7 @@ crop_image_coco.py: separate a group of 2048*2048 images to 800*800 images
 
 So if you just want understand coco's json file, just need view the crop_image_coco.py
 
+If you wish to run the code modify the path in code , run add_cate.py->convert_to_coco.py->crop_image_coco.py
+
 
           
